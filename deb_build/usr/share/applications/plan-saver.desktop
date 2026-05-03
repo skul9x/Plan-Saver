@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Plan-Saver
+Exec=plan-saver
+Icon=plan-saver
+Type=Application
+Categories=Development;Utility;
+Comment=Extract and save markdown plans
+Terminal=false

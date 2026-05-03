@@ -1,0 +1,7 @@
+Package: plan-saver
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: skul9x <skul9x@github.com>
+Description: Plan-Saver: Extract and save markdown blocks from text.

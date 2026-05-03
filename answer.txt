@@ -1,0 +1,101 @@
+Chào anh, em đã cập nhật lại bộ Plan để khớp hoàn toàn với danh sách các model thực tế đang có trong file `GeminiApiClient.kt` của anh.
+
+Cấu trúc thư mục Plan mới:
+/plans/260503-1905-summarize-model-selection/
+  ├── plan.md
+  ├── phase-01-preferences.md
+  ├── phase-02-ui-component.md
+  ├── phase-03-integration.md
+
+```md
+#plan.md
+# Plan: Tùy chọn Model Gemini cho Tóm tắt
+
+## Tổng quan
+Hiện tại ứng dụng đang tự động xoay vòng qua 4 model (2.5 Flash Lite, 3 Flash Preview, 3.1 Flash Lite Preview, 2.5 Flash) khi gặp lỗi quota. Tính năng này sẽ cho phép người dùng chủ động chọn 1 model ưu tiên từ danh sách này trong Settings.
+
+## Danh sách Model tích hợp (từ GeminiApiClient.kt)
+1. Gemini 2.5 Flash Lite (`models/gemini-2.5-flash-lite`)
+2. Gemini 3 Flash Preview (`models/gemini-3-flash-preview`)
+3. Gemini 3.1 Flash Lite Preview (`models/gemini-3.1-flash-lite-preview`)
+4. Gemini 2.5 Flash (`models/gemini-2.5-flash`)
+
+## Các giai đoạn (Phases)
+| Phase | Tên nhiệm vụ | Trạng thái |
+|------|--------------|------------|
+| 01 | Cập nhật Preferences & Enum | Chờ thực hiện |
+| 02 | Xây dựng UI Component | Chờ thực hiện |
+| 03 | Tích hợp Logic vào Client | Chờ thực hiện |
+```
+
+```md
+#phase-01-preferences.md
+# Phase 01: Data Layer & Preferences
+
+## Mục tiêu
+Định nghĩa Enum cho các model thực tế và thêm cơ chế lưu trữ lựa chọn vào `AppPreferences`.
+
+## Công việc
+- [ ] Tạo `enum class SummarizeModel` trong `GeminiModels.kt` với các giá trị:
+    - `GEMINI_2_5_FLASH_LITE("models/gemini-2.5-flash-lite", "Gemini 2.5 Flash Lite")`
+    - `GEMINI_3_FLASH_PREVIEW("models/gemini-3-flash-preview", "Gemini 3 Flash Preview")`
+    - `GEMINI_3_1_FLASH_LITE_PREVIEW("models/gemini-3.1-flash-lite-preview", "Gemini 3.1 Flash Lite Preview")`
+    - `GEMINI_2_5_FLASH("models/gemini-2.5-flash", "Gemini 2.5 Flash")`
+- [ ] Cập nhật `AppPreferences.kt`:
+    - Thêm `KEY_SELECTED_SUMMARIZE_MODEL = "selected_summarize_model"`.
+    - Thêm hàm `setSelectedSummarizeModel(model: SummarizeModel)`.
+    - Thêm hàm `getSelectedSummarizeModel()` (Mặc định trả về `GEMINI_2_5_FLASH_LITE`).
+
+## File liên quan
+- `app/src/main/java/com/skul9x/rssreader/data/network/gemini/GeminiModels.kt`
+- `app/src/main/java/com/skul9x/rssreader/data/local/AppPreferences.kt`
+
+## Kiểm tra
+- [ ] Đảm bảo Enum khớp chính xác với string model ID trong `GeminiApiClient.kt`.
+```
+
+```md
+#phase-02-ui-component.md
+# Phase 02: Giao diện Cài đặt (UI)
+
+## Mục tiêu
+Tạo Section chọn Model trong màn hình Settings tương tự như các mục `AudioStreamSection`.
+
+## Công việc
+- [ ] Tạo file `SummarizeModelSection.kt` sử dụng Jetpack Compose.
+- [ ] Hiển thị danh sách 4 model với RadioButton hoặc Checkmark để người dùng chọn.
+- [ ] Tích hợp vào `SettingsScreen.kt`:
+    - Khai báo state `currentModel` lấy từ `appPreferences`.
+    - Thêm Component mới vào Column chính của Settings.
+    - Gọi `appPreferences.setSelectedSummarizeModel(it)` khi người dùng thay đổi.
+- [ ] Thêm thông báo `Toast` khi đổi model thành công.
+
+## File liên quan
+- `app/src/main/java/com/skul9x/rssreader/ui/settings/SummarizeModelSection.kt` (Tạo mới)
+- `app/src/main/java/com/skul9x/rssreader/ui/settings/SettingsScreen.kt`
+
+## Kiểm tra
+- [ ] Mở Settings, bấm chọn model khác và kiểm tra xem UI có cập nhật đúng trạng thái đã chọn không.
+```
+
+```md
+#phase-03-integration.md
+# Phase 03: Tích hợp vào GeminiApiClient
+
+## Mục tiêu
+Thay đổi logic `summarizeWithRetry` để ưu tiên model người dùng đã chọn thay vì luôn bắt đầu từ đầu danh sách `MODELS` cố định.
+
+## Công việc
+- [ ] Mở `GeminiApiClient.kt`.
+- [ ] Trong hàm `summarizeWithRetry`, lấy model đã chọn từ `AppPreferences`.
+- [ ] Sắp xếp lại (reorder) danh sách `MODELS` tạm thời trong hàm: đưa model được chọn lên vị trí đầu tiên, các model còn lại đẩy xuống dưới để vẫn giữ cơ chế failover (dự phòng).
+- [ ] Đảm bảo tính năng dịch tiêu đề (`translateToVietnamese`) vẫn dùng `gemini-flash-lite-latest` như cũ để tối ưu tốc độ.
+
+## File liên quan
+- `app/src/main/java/com/skul9x/rssreader/data/network/GeminiApiClient.kt`
+
+## Kiểm tra
+- [ ] Chọn một model cụ thể (VD: Gemini 3 Flash Preview).
+- [ ] Thực hiện tóm tắt 1 bài báo.
+- [ ] Kiểm tra Logcat hoặc Activity Logs để xác nhận model được gọi đầu tiên chính là model đã chọn.
+```
